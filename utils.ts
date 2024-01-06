@@ -42,7 +42,8 @@ type RGB = [number, number, number];
 export const colorify = (
 	char: string,
 	[r, g, b]: RGB | (typeof COLORS)[keyof typeof COLORS],
-) => `\x1b[38;2;${r};${g};${b}m${char}\x1b[0m`;
+	bg = false,
+) => `\x1b[${bg ? "48" : "38"};2;${r};${g};${b}m${char}\x1b[0m`;
 
 export const italic = (char: string) => `\x1b[3m${char}\x1b[0m`;
 
@@ -53,8 +54,10 @@ export const charBright = (brightness: number) => {
 	return BRIGHT_SCALE[index];
 };
 
-export const playSong = (path: string) => {
-	const p = Bun.spawn(["afplay", path]);
+export const playSong = (path: string, start = 0) => {
+	const p = Bun.spawn(["play", path, "trim", `${start / 1000}`], {
+		stderr: Bun.file("/dev/null"),
+	});
 	process.on("exit", () => {
 		p.kill();
 	});

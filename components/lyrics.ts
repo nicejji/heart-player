@@ -1,4 +1,6 @@
+import type { Subprocess } from "bun";
 import type Board from "../board";
+import { playSong } from "../utils";
 
 type Line = {
 	startTimeMs: number;
@@ -11,36 +13,53 @@ type SpotifyLyrics = {
 };
 
 export default class Lyrics {
+	songPath: string;
+	audioProcess: Subprocess | null = null;
 	board: Board;
 	lines: Line[] = [];
-	startetAt = 0;
+	pausedAt = 0;
+	playedTime = 0;
 	playing = false;
 	chunkSize = 4;
 
-	constructor(board: Board, chunkSize: number) {
+	constructor(board: Board, songPath: string, chunkSize: number) {
 		this.board = board;
 		this.chunkSize = chunkSize;
+		this.songPath = songPath;
 	}
 
 	play() {
-		const { playing, lines } = this;
-		if (playing) return;
+		if (this.playing) return;
+		this.audioProcess = playSong(this.songPath, this.playedTime);
 
+		this.pausedAt = Date.now();
 		this.playing = true;
-		this.startetAt = Date.now();
+	}
 
-		const last = lines.at(-1) as Line;
-		setTimeout(() => {
-			this.playing = false;
-		}, last.startTimeMs);
+	pause() {
+		this.audioProcess?.kill();
+		this.playing = false;
+	}
+
+	seek(seconds: number) {
+		if (this.playedTime < 1000) return;
+		this.pause();
+		this.playedTime += seconds * 1000;
+		this.play();
+	}
+
+	update() {
+		if (this.playing) {
+			this.playedTime += Date.now() - this.pausedAt;
+		}
+		this.pausedAt = Date.now();
 	}
 
 	draw() {
-		if (!this.playing) return;
-		const { startetAt, lines, chunkSize, board } = this;
+		const { playedTime, lines, chunkSize, board } = this;
 
 		const lastLine = lines.findLastIndex(
-			({ startTimeMs }) => Date.now() > startTimeMs + startetAt,
+			({ startTimeMs }) => playedTime > startTimeMs,
 		);
 		const chunk = lines
 			.slice(lastLine - (lastLine % chunkSize), lastLine + 1)
