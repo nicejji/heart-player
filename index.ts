@@ -6,8 +6,13 @@ import Songs from "./components/songs";
 const board = new Board();
 board.enter();
 
-const heart = new Heart(board, { delay: 5 });
-const rain = new Rain(board, {});
+const FPS = 60;
+
+const heart = new Heart(board, { delay: 7 });
+const rain = new Rain(board, {
+	maxDelay: 7,
+	probability: 0.3,
+});
 const songs = new Songs(board);
 
 setInterval(() => {
@@ -21,4 +26,4 @@ setInterval(() => {
 	songs.draw();
 
 	board.flush();
-}, 20);
+}, 1000 / FPS);

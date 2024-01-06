@@ -31,11 +31,11 @@ export default class Board {
 	}
 
 	get centerX() {
-		return Math.floor(this.width / 2);
+		return ~~(this.width / 2);
 	}
 
 	get centerY() {
-		return Math.floor(this.height / 2);
+		return ~~(this.height / 2);
 	}
 
 	addPending(x: number, y: number, char: string) {

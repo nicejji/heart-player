@@ -1,7 +1,7 @@
 import type Board from "../board";
 import { COLORS, charBright, colorify } from "../utils";
 
-const { cos, sin, floor } = Math;
+const { cos, sin } = Math;
 
 type HeartConfig = {
 	cX?: number;
@@ -37,7 +37,7 @@ export default class Heart {
 			cY,
 			delay = 0,
 			isGrowing = true,
-			getChar = (offset) => colorify(charBright(offset), COLORS.love),
+			getChar = (offset) => colorify(charBright(1 - offset), COLORS.love),
 		}: HeartConfig,
 	) {
 		this.board = board;
@@ -71,23 +71,26 @@ export default class Heart {
 	}
 
 	draw() {
-		for (let t = -3; t <= 3; t += 0.01) {
-			const x = 16 * sin(t) ** 3;
-			const y =
-				-1 * (13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t));
-			for (let i = 0; i <= this.size; i += 0.01) {
-				const char = this.getChar(i / (this.size + 0.01));
-				this.board.addPending(
-					floor(x * i * 2) + this.cX,
-					floor(y * i) + this.cY,
-					char,
-				);
-				this.board.addPending(
-					floor(x * i * 2) + this.cX - 1,
-					floor(y * i) + this.cY,
-					char,
-				);
+		const { board, size, getChar, cX, cY } = this;
+		for (let scale = 0; scale < size; scale += 0.05) {
+			const char = getChar(scale / size);
+			for (let t = -3; t < 3; t += 0.05) {
+				const [x, y] = heartMap[~~(t * 100 + 300)];
+				const baseX = cX + ~~(x * scale) * 2;
+				const baseY = cY + ~~(y * scale);
+				board.addPending(baseX, baseY, char);
+				board.addPending(baseX - 1, baseY, char);
 			}
 		}
 	}
 }
+
+const heartFormulae = (t: number) => {
+	const x = 16 * sin(t) ** 3;
+	const y = -1 * (13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t));
+	return [x, y] as [number, number];
+};
+
+const heartMap = Array.from({ length: 600 }, (_, i) =>
+	heartFormulae((i - 300) / 100),
+);

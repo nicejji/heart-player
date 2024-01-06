@@ -66,8 +66,8 @@ export default class Lyrics {
 			.map((l) => l.words);
 
 		for (const [i, line] of chunk.entries()) {
-			const x = board.centerX - Math.floor(line.length / 2);
-			const y = board.centerY - Math.floor(chunk.length / 2) + i;
+			const x = board.centerX - ~~(line.length / 2);
+			const y = board.centerY - ~~(chunk.length / 2) + i;
 			board.putChars(x, y, ` ${line.trim()} `.split(""));
 		}
 	}

@@ -47,10 +47,10 @@ export const colorify = (
 
 export const italic = (char: string) => `\x1b[3m${char}\x1b[0m`;
 
-const BRIGHT_SCALE = ".`-wW";
+const BRIGHT_SCALE = "..``--//aaww&&WW@@@";
 
 export const charBright = (brightness: number) => {
-	const index = Math.floor(brightness * (BRIGHT_SCALE.length - 1));
+	const index = ~~(brightness * (BRIGHT_SCALE.length - 1));
 	return BRIGHT_SCALE[index];
 };
 
@@ -65,7 +65,21 @@ export const playSong = (path: string, start = 0) => {
 };
 
 export const padCenter = (chars: string[], size: number) => {
-	const pad = Array(Math.floor((size - chars.length) / 2)).fill(" ");
+	const pad = Array(~~((size - chars.length) / 2)).fill(" ");
 	const remain = Array(size - (pad.length * 2 + chars.length)).fill(" ");
 	return [...remain, ...pad, ...chars, ...pad];
+};
+
+export const memo = <Return, Args extends unknown[]>(
+	func: (...args: Args) => Return,
+) => {
+	const cache = new Map<string, Return>();
+	return (...args: Args) => {
+		const key = args.join("");
+		let result = cache.get(key);
+		if (result) return result;
+		result = func(...args);
+		cache.set(key, result);
+		return result;
+	};
 };

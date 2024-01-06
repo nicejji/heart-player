@@ -6,6 +6,7 @@ type RainConfig = {
 	maxSize?: number;
 	maxDelay?: number;
 	probability?: number;
+	getChar?: (percent: number) => string;
 };
 
 export default class Rain {
@@ -15,35 +16,38 @@ export default class Rain {
 	probability: number;
 	board: Board;
 	drops: Drop[] = [];
+	getChar?: (percent: number) => string;
 
 	constructor(
 		board: Board,
-		{ minSize = 1, maxSize = 10, maxDelay = 5, probability = 0.3 }: RainConfig,
+		{
+			minSize = 1,
+			maxSize = 10,
+			maxDelay = 5,
+			probability = 0.3,
+			getChar,
+		}: RainConfig,
 	) {
 		this.board = board;
 		this.minSize = minSize;
 		this.maxSize = maxSize;
 		this.maxDelay = maxDelay;
 		this.probability = probability;
+		this.getChar = getChar;
 	}
 
 	#addDrop() {
 		this.drops.push(
 			new Drop(this.board, {
-				size: Math.floor(
-					Math.random() * (this.maxSize - this.minSize) + this.minSize,
-				),
-				x: Math.floor(Math.random() * (this.board.width - 1)),
-				delay: Math.floor(Math.random() * this.maxDelay),
+				getChar: this.getChar,
+				size: ~~(Math.random() * (this.maxSize - this.minSize) + this.minSize),
+				x: ~~(Math.random() * (this.board.width - 1)),
+				delay: ~~(Math.random() * this.maxDelay),
 			}),
 		);
 	}
 	update() {
-		const randPadding = (1 - this.probability) / 2;
-		const roll = Math.random();
-		if (roll > 1 - randPadding || roll < randPadding) {
-			this.#addDrop();
-		}
+		if (Math.random() < this.probability) this.#addDrop();
 		for (const drop of this.drops) {
 			drop.update();
 		}

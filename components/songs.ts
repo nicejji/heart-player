@@ -5,8 +5,8 @@ import type Board from "../board";
 import { COLORS, colorify, italic } from "../utils";
 
 const formatTime = (ms: number) => {
-	const mins = `${Math.floor(ms / 60000)}`.padStart(2, "0");
-	const secs = `${Math.floor((ms % 60000) / 1000)}`.padStart(2, "0");
+	const mins = `${~~(ms / 60000)}`.padStart(2, "0");
+	const secs = `${~~((ms % 60000) / 1000)}`.padStart(2, "0");
 	return `${mins}:${secs}`;
 };
 

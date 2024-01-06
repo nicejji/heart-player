@@ -17,12 +17,20 @@ export default class Drop {
 	end = 0;
 	getChar: (percent: number) => string;
 
-	constructor(board: Board, { size, delay, x: y }: DropConfig) {
+	constructor(
+		board: Board,
+		{
+			size,
+			delay,
+			x: y,
+			getChar = (percent) => colorify(`${charBright(percent)}`, COLORS.foam),
+		}: DropConfig,
+	) {
 		this.board = board;
 		this.x = y;
 		this.size = size;
 		this.delay = delay;
-		this.getChar = (percent) => colorify(`${charBright(percent)}`, COLORS.foam);
+		this.getChar = getChar;
 	}
 
 	get isValid() {
