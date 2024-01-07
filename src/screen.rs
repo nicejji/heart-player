@@ -11,8 +11,8 @@ pub type Cell = <char as Stylize>::Styled;
 pub struct Screen {
     buffer: Vec<Cell>,
     actual: Vec<Cell>,
-    width: usize,
-    // height: usize,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Screen {
@@ -20,7 +20,7 @@ impl Screen {
         let total = width * height;
         Self {
             width,
-            // height,
+            height,
             buffer: vec![' '.reset(); total],
             actual: vec!['\0'.reset(); total],
         }

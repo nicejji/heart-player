@@ -13,7 +13,7 @@ use crossterm::{
     terminal::{self},
 };
 
-use components::heart::Heart;
+use components::{heart::Heart, rain::Rain};
 use screen::Screen;
 use utils::{cleanup, setup};
 
@@ -38,18 +38,21 @@ fn handle_keys(stdout: &mut Stdout, timeout_ms: u64) {
 
 struct State {
     heart: Heart,
+    rain: Rain,
 }
 impl State {
-    fn new(heart: Heart) -> Self {
-        Self { heart }
+    fn new(heart: Heart, rain: Rain) -> Self {
+        Self { heart, rain }
     }
     fn update(&mut self) {
+        self.rain.update();
         self.heart.update();
     }
 }
 
 fn render(screen: &mut Screen, stdout: &mut Stdout, state: &State) {
     screen.clear();
+    state.rain.draw(screen);
     state.heart.draw(screen);
     screen.flush(stdout);
 }
@@ -61,7 +64,10 @@ fn main() {
     let (width, height) = terminal::size().unwrap();
     let mut screen = Screen::new(width as usize, height as usize);
 
-    let mut state = State::new(Heart::new(width as usize / 2, height as usize / 2));
+    let mut state = State::new(
+        Heart::new(width as usize / 2, height as usize / 2),
+        Rain::new(width as usize, height as usize),
+    );
 
     let fps = 60;
 
