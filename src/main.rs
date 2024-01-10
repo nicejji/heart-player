@@ -38,22 +38,29 @@ fn handle_keys(stdout: &mut Stdout, timeout_ms: u64) {
 
 struct State {
     heart: Heart,
-    rain: Rain,
+    rain_bg: Rain,
+    rain_fg: Rain,
 }
 impl State {
-    fn new(heart: Heart, rain: Rain) -> Self {
-        Self { heart, rain }
+    fn new(heart: Heart, rain_bg: Rain, rain_fg: Rain) -> Self {
+        Self {
+            heart,
+            rain_bg,
+            rain_fg,
+        }
     }
     fn update(&mut self) {
-        self.rain.update();
+        self.rain_bg.update();
         self.heart.update();
+        self.rain_fg.update();
     }
 }
 
 fn render(screen: &mut Screen, stdout: &mut Stdout, state: &State) {
     screen.clear();
-    state.rain.draw(screen);
+    state.rain_bg.draw(screen);
     state.heart.draw(screen);
+    state.rain_fg.draw(screen);
     screen.flush(stdout);
 }
 
@@ -66,7 +73,8 @@ fn main() {
 
     let mut state = State::new(
         Heart::new(width as usize / 2, height as usize / 2),
-        Rain::new(width as usize, height as usize),
+        Rain::new(width as usize, height as usize, 0.3),
+        Rain::new(width as usize, height as usize, 1.0),
     );
 
     let fps = 60;

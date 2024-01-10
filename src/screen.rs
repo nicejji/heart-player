@@ -27,7 +27,14 @@ impl Screen {
     }
 
     pub fn put(&mut self, x: usize, y: usize, c: Cell) {
-        self.buffer[y * self.width + x] = c;
+        let index = y * self.width + x;
+        if index <= self.buffer.len() - 1 {
+            self.buffer[y * self.width + x] = c;
+        }
+    }
+
+    pub fn get(&self, x: usize, y: usize) -> Cell {
+        self.buffer[y * self.width + x]
     }
 
     pub fn clear(&mut self) {
