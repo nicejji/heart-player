@@ -1,10 +1,9 @@
-use std::io::{Stdout, Write};
-
 use crossterm::{
     cursor,
     style::{PrintStyledContent, Stylize},
-    QueueableCommand,
+    terminal, QueueableCommand,
 };
+use std::io::{Stdout, Write};
 
 pub type Cell = <char as Stylize>::Styled;
 
@@ -16,11 +15,12 @@ pub struct Screen {
 }
 
 impl Screen {
-    pub fn new(width: usize, height: usize) -> Self {
-        let total = width * height;
+    pub fn new() -> Self {
+        let (width, height) = terminal::size().unwrap();
+        let total = (width * height) as usize;
         Self {
-            width,
-            height,
+            width: width as usize,
+            height: height as usize,
             buffer: vec![' '.reset(); total],
             actual: vec!['\0'.reset(); total],
         }
@@ -31,10 +31,6 @@ impl Screen {
         if index <= self.buffer.len() - 1 {
             self.buffer[y * self.width + x] = c;
         }
-    }
-
-    pub fn get(&self, x: usize, y: usize) -> Cell {
-        self.buffer[y * self.width + x]
     }
 
     pub fn clear(&mut self) {

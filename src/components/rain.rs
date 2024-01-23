@@ -1,76 +1,75 @@
 use crossterm::style::Stylize;
 
-use crate::{screen::Screen, utils::choose_bright};
+use crate::{
+    screen::Screen,
+    utils::{choose_bright, UpdateDebouncer},
+};
 use crossterm::style::Color;
 
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 
 struct Drop {
-    x: usize,
-    size: usize,
-    delay: usize,
-    cooldown: usize,
     start: usize,
     end: usize,
-    max_end: usize,
-    max_bright: f64,
+    x: usize,
+    max_y: usize,
+    max_x: usize,
+    size: usize,
+    brightness: f64,
+    debouncer: UpdateDebouncer,
 }
 
 impl Drop {
-    pub fn new(x: usize, max_end: usize, size: usize, delay: usize, max_bright: f64) -> Self {
+    pub fn new(
+        x: usize,
+        max_x: usize,
+        max_y: usize,
+        size: usize,
+        brightness: f64,
+        speed: f64,
+    ) -> Self {
         Self {
-            x,
-            max_end,
-            size,
-            delay,
-            cooldown: 0,
             start: 0,
             end: 0,
-            max_bright,
+            x,
+            max_y,
+            max_x,
+            size,
+            debouncer: UpdateDebouncer::new(speed),
+            brightness,
         }
     }
+
     pub fn is_valid(&self) -> bool {
-        self.start < self.max_end - 1
+        self.start < self.end
     }
 
     pub fn update(&mut self) {
-        if self.cooldown >= self.delay {
-            self.cooldown = 0;
-            if self.end >= self.size && self.start < self.max_end {
-                self.start += 1;
-            }
-            if self.end < self.max_end {
-                self.end += 1;
-            }
-        } else {
-            self.cooldown += 1;
+        if !self.debouncer.next().unwrap() {
+            return;
+        }
+        if self.start < self.max_y && self.end >= self.size {
+            self.start += 1;
+        }
+        if self.end < self.max_y {
+            self.end += 1;
         }
     }
 
     pub fn draw(&self, screen: &mut Screen) {
-        for y in self.start..self.end {
+        for y in self.start..=self.end {
             let base_bright = (y - self.start) as f64 / (self.end - self.start) as f64;
-            let ch = choose_bright(base_bright * self.max_bright);
-            let c1 = screen.get(self.x, y).style().foreground_color;
-            // foam = 156, 207, 216
-            // love = 235, 111, 146
-            // base = 25, 23, 36
-            let color = match c1 {
-                Some(Color::Red) => blend_colors((156, 207, 216), (235, 111, 146), 0.5),
-                _ => blend_colors((156, 207, 216), (25, 25, 36), self.max_bright),
-            };
-            screen.put(self.x, y, ch.with(color));
+            let ch = choose_bright(base_bright * self.brightness).with(Color::Blue);
+            screen.put(self.x, y, ch);
         }
-    }
-}
-
-fn blend_colors(c1: (u8, u8, u8), c2: (u8, u8, u8), w: f64) -> Color {
-    let (r1, g1, b1) = c1;
-    let (r2, g2, b2) = c2;
-    Color::Rgb {
-        r: (((r1 as f64).powi(2) * w + (r2 as f64).powi(2) * (1.0 - w)).sqrt() as u8),
-        g: (((g1 as f64).powi(2) * w + (g2 as f64).powi(2) * (1.0 - w)).sqrt() as u8),
-        b: (((b1 as f64).powi(2) * w + (b2 as f64).powi(2) * (1.0 - w)).sqrt() as u8),
+        if self.end == self.max_y {
+            let w = self.size.saturating_sub(self.end - self.start) / 2;
+            for x in 1..=w {
+                let ch = choose_bright((1.0 - x as f64 / w as f64) / 2.0).with(Color::Blue);
+                screen.put((self.x + x).min(self.max_x), self.end, ch);
+                screen.put(self.x.saturating_sub(x), self.end, ch);
+            }
+        }
     }
 }
 
@@ -79,33 +78,31 @@ pub struct Rain {
     rng: ThreadRng,
     max_x: usize,
     max_y: usize,
-    max_bright: f64,
 }
 
 impl Rain {
-    pub fn new(max_x: usize, max_y: usize, max_bright: f64) -> Self {
+    pub fn new(screen: &Screen) -> Self {
         Self {
-            max_x,
-            max_y,
+            max_x: screen.width - 1,
+            max_y: screen.height - 1,
             drops: vec![],
             rng: thread_rng(),
-            max_bright,
         }
     }
 
     fn add_drop(&mut self) {
         self.drops.push(Drop::new(
-            self.rng.gen_range(0..self.max_x),
+            self.rng.gen_range(0..=self.max_x),
+            self.max_x,
             self.max_y,
-            self.rng.gen_range(0..9) + 1,
-            self.rng.gen_range(0..5),
-            self.max_bright,
+            self.rng.gen_range(3..=10),
+            self.rng.gen::<f64>(),
+            self.rng.gen_range(3..=10) as f64 / 10.0,
         ))
     }
 
     pub fn update(&mut self) {
-        let roll: f64 = self.rng.gen();
-        if roll < 0.3 {
+        if self.rng.gen_bool(0.7) {
             self.add_drop()
         }
         for drop in self.drops.iter_mut() {

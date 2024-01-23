@@ -2,86 +2,60 @@ mod components;
 mod screen;
 mod utils;
 
-use std::{
-    io::{stdout, Stdout},
-    process::exit,
-    time::Duration,
-};
-
-use crossterm::{
-    event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers},
-    terminal::{self},
-};
-
 use components::{heart::Heart, rain::Rain};
+use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
 use screen::Screen;
+use std::{io::stdout, process::exit, time::Duration};
 use utils::{cleanup, setup};
 
-fn handle_keys(stdout: &mut Stdout, timeout_ms: u64) {
-    if poll(Duration::from_millis(timeout_ms)).unwrap() {
-        match read().unwrap() {
-            Event::Key(k) => match k {
-                KeyEvent {
-                    code: KeyCode::Char('c'),
-                    modifiers: KeyModifiers::CONTROL,
-                    ..
-                } => {
-                    cleanup(stdout);
-                    exit(0);
-                }
-                _ => {}
-            },
-            _ => {}
-        }
-    }
-}
-
-struct State {
-    heart: Heart,
-    rain_bg: Rain,
-    rain_fg: Rain,
-}
-impl State {
-    fn new(heart: Heart, rain_bg: Rain, rain_fg: Rain) -> Self {
-        Self {
-            heart,
-            rain_bg,
-            rain_fg,
-        }
-    }
-    fn update(&mut self) {
-        self.rain_bg.update();
-        self.heart.update();
-        self.rain_fg.update();
-    }
-}
-
-fn render(screen: &mut Screen, stdout: &mut Stdout, state: &State) {
-    screen.clear();
-    state.rain_bg.draw(screen);
-    state.heart.draw(screen);
-    state.rain_fg.draw(screen);
-    screen.flush(stdout);
-}
+const FPS: u64 = 60;
 
 fn main() {
     let mut stdout = stdout();
     setup(&mut stdout);
 
-    let (width, height) = terminal::size().unwrap();
-    let mut screen = Screen::new(width as usize, height as usize);
+    let mut screen = Screen::new();
 
-    let mut state = State::new(
-        Heart::new(width as usize / 2, height as usize / 2),
-        Rain::new(width as usize, height as usize, 0.3),
-        Rain::new(width as usize, height as usize, 1.0),
-    );
+    let mut rain = Rain::new(&screen);
+    let mut heart = Heart::new(&screen);
 
-    let fps = 60;
+    let mut paused = false;
 
     loop {
-        render(&mut screen, &mut stdout, &state);
-        state.update();
-        handle_keys(&mut stdout, 1000 / fps);
+        if !paused {
+            // render
+            screen.clear();
+            rain.draw(&mut screen);
+            heart.draw(&mut screen);
+            screen.flush(&mut stdout);
+
+            // update state
+            rain.update();
+            heart.update();
+        }
+
+        // handle key events
+        if poll(Duration::from_millis(1000 / FPS)).unwrap() {
+            match read().unwrap() {
+                Event::Key(k) => match k {
+                    KeyEvent {
+                        code: KeyCode::Char('c'),
+                        modifiers: KeyModifiers::CONTROL,
+                        ..
+                    } => {
+                        cleanup(&mut stdout);
+                        exit(0);
+                    }
+                    KeyEvent {
+                        code: KeyCode::Char(' '),
+                        ..
+                    } => {
+                        paused = !paused;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
     }
 }
