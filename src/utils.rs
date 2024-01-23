@@ -24,3 +24,27 @@ pub fn cleanup(stdout: &mut Stdout) {
 pub fn choose_bright(level: f64) -> char {
     SCALE[(SCALE_MAX * level) as usize] as char
 }
+
+pub struct UpdateDebouncer {
+    counter: usize,
+    cooldown: usize,
+}
+
+impl UpdateDebouncer {
+    pub fn new(speed: f64) -> Self {
+        Self {
+            counter: 0,
+            cooldown: (1.0 / speed) as usize,
+        }
+    }
+}
+
+impl Iterator for UpdateDebouncer {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let is_updating = self.counter % self.cooldown == 0;
+        self.counter += 1;
+        Some(is_updating)
+    }
+}
